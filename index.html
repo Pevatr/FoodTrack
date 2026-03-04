@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FoodLog Light</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --card: #1e293b;
+  --card2: #273449;
+  --border: #334155;
+  --accent: #38bdf8;
+  --accent2: #0ea5e9;
+  --accent-dim: #0c2a3a;
+  --green: #4ade80;
+  --green2: #22c55e;
+  --green-dim: #0d2a1a;
+  --orange: #fb923c;
+  --orange-dim: #2a1a0a;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --muted: #64748b;
+  --muted2: #94a3b8;
+  --text: #f1f5f9;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Syne', sans-serif;
+  --radius: 16px;
+  --nav-h: 72px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: var(--sans);
+  background: #0a1020;
+  color: var(--text);
+  display: flex; justify-content: center;
+}
+.app {
+  width: 100%; max-width: 460px;
+  min-height: 100vh;
+  background: var(--bg);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; flex-direction: column; min-height: 100vh; padding-bottom: calc(var(--nav-h) + 24px); }
+.screen.active { display: flex; }
+
+/* ── SHARED HEADER ── */
+.topbar {
+  padding: 52px 20px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.topbar-left .greeting { font-size: 13px; color: var(--muted2); font-weight: 600; }
+.topbar-left .tdate   { font-size: 18px; font-weight: 800; letter-spacing: -.5px; margin-top: 2px; }
+.settings-btn {
+  width: 40px; height: 40px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; transition: border-color .15s;
+}
+.settings-btn:active { border-color: var(--accent); }
+.screen-header {
+  padding: 52px 20px 20px; display: flex; align-items: center; gap: 14px;
+}
+.back-btn {
+  width: 38px; height: 38px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; line-height: 1; flex-shrink: 0; transition: border-color .15s;
+}
+.back-btn:active { border-color: var(--accent); }
+.screen-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.screen-body  { padding: 0 16px; flex: 1; }
+
+/* ── PROGRESS CARDS ── */
+.progress-section { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.prog-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+.prog-card.water { border-color: #1a3a50; }
+.prog-card.food  { border-color: #1a2e1a; }
+.prog-label { font-size: 12px; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.prog-values { display: flex; align-items: baseline; gap: 6px; margin-bottom: 12px; }
+.prog-current { font-size: 32px; font-weight: 800; font-family: var(--mono); line-height: 1; }
+.prog-current.wc { color: var(--accent); }
+.prog-current.fc { color: var(--green); }
+.prog-unit { font-size: 14px; color: var(--muted); }
+.prog-goal { font-size: 13px; color: var(--muted); margin-left: auto; }
+.prog-goal strong { color: var(--muted2); }
+.track { height: 8px; background: var(--card2); border-radius: 8px; overflow: hidden; }
+.fill { height: 100%; border-radius: 8px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+.fill.water  { background: linear-gradient(90deg,var(--accent2),var(--accent)); }
+.fill.food   { background: linear-gradient(90deg,var(--green2),var(--green)); }
+.fill.warn   { background: linear-gradient(90deg,var(--warn),#f59e0b); }
+.fill.danger { background: linear-gradient(90deg,var(--danger),#ef4444); }
+.prog-remain { font-size: 12px; margin-top: 8px; font-weight: 600; color: var(--muted); }
+.prog-remain.ok      { color: var(--accent); }
+.prog-remain.food-ok { color: var(--green); }
+.prog-remain.over    { color: var(--danger); }
+.prog-last {
+  font-size: 11px; margin-top: 6px; font-weight: 600;
+  color: var(--muted); font-family: var(--mono);
+  display: flex; align-items: center; gap: 5px;
+}
+.prog-last .last-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--muted); flex-shrink: 0;
+}
+/* tekutiny */
+.prog-last.fresh .last-dot      { background: var(--green); }
+.prog-last.fresh                { color: var(--green); }
+.prog-last.warn-time .last-dot  { background: var(--warn); }
+.prog-last.warn-time            { color: var(--warn); }
+.prog-last.danger-time .last-dot{ background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+.prog-last.danger-time          { color: var(--danger); }
+/* jídlo: šedá pro > 2h (v pohodě) */
+.prog-last.food-old .last-dot   { background: var(--muted); }
+.prog-last.food-old             { color: var(--muted); }
+
+/* ── CONSUMPTION SUMMARY ── */
+.consump-line {
+  margin: -4px 16px 14px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: transparent;
+  border-top: 1px solid var(--border);
+}
+.consump-icon { font-size: 14px; opacity: .6; }
+.consump-text { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.consump-text strong { color: var(--muted2); font-weight: 500; }
+
+/* ── TODAY LIST ── */
+.today-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+/* ── SBALITELNÉ SEKCE ── */
+.tl-section {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.tl-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 14px; background: var(--card2); border: 1px solid var(--border);
+  border-radius: 12px; cursor: pointer; user-select: none;
+  transition: border-color .15s, background .15s;
+}
+.tl-section-header:active { border-color: var(--accent); }
+.tl-section-left { display: flex; align-items: center; gap: 8px; }
+.tl-section-label {
+  font-size: 12px; font-weight: 700; color: var(--muted2); text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.tl-section-count {
+  font-size: 11px; color: var(--muted); font-family: var(--mono);
+  background: var(--card); border-radius: 6px; padding: 2px 7px;
+}
+.tl-section-arrow {
+  font-size: 12px; color: var(--muted); transition: transform .25s ease;
+}
+.tl-section.collapsed .tl-section-arrow { transform: rotate(-90deg); }
+.tl-section-body {
+  display: flex; flex-direction: column; gap: 8px;
+  overflow: hidden;
+  transition: max-height .3s ease, opacity .25s ease;
+  max-height: 2000px; opacity: 1;
+}
+.tl-section.collapsed .tl-section-body { max-height: 0; opacity: 0; pointer-events: none; }
+.tl-item {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 13px 14px;
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; transition: border-color .15s;
+  -webkit-user-select: none; user-select: none;
+}
+.tl-item:active { border-color: var(--accent); background: var(--card2); }
+.tl-icon   { font-size: 20px; flex-shrink: 0; }
+.tl-info   { flex: 1; min-width: 0; }
+.tl-name   { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-detail { font-size: 11px; color: var(--muted2); margin-top: 2px; font-family: var(--mono); }
+.tl-time   { font-size: 11px; color: var(--muted); font-family: var(--mono); flex-shrink: 0; }
+.tl-del    { font-size: 18px; flex-shrink: 0; padding: 4px; opacity: .5; transition: opacity .15s; }
+.tl-del:active { opacity: 1; }
+.tl-empty  { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+.tl-empty-icon { font-size: 40px; margin-bottom: 12px; display: block; }
+
+/* ── EDIT MODAL ── */
+.edit-modal {
+  width: 100%; max-width: 460px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 24px 24px 0 0; padding: 24px 20px 48px;
+  animation: slideUp .25s ease;
+}
+.edit-modal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+.btn-save-green { padding: 14px; border-radius: 12px; border: none; background: var(--green2); color: #0f172a; font-family: var(--sans); font-size: 14px; font-weight: 800; cursor: pointer; }
+
+/* ── HIST DAY DELETE ── */
+.hdc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.hdc-del-btn {
+  font-size: 15px; opacity: .4; cursor: pointer; padding: 4px 6px;
+  border-radius: 8px; transition: opacity .15s, background .15s;
+}
+.hdc-del-btn:active { opacity: 1; background: rgba(248,113,113,.15); }
+
+/* ── GRID BUTTONS ── */
+.grid-label {
+  font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+  letter-spacing: 1px; margin-bottom: 10px; padding-left: 2px;
+}
+.btn-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
+.grid-btn {
+  background: var(--card); border: 2px solid var(--border);
+  border-radius: 14px; padding: 13px 6px; cursor: pointer;
+  transition: all .15s; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  font-family: var(--sans);
+}
+.grid-btn:active { transform: scale(.93); }
+.grid-btn.sel-vol  { background: var(--accent-dim); border-color: var(--accent); }
+.grid-btn.sel-typ  { background: var(--green-dim);  border-color: var(--green); }
+.grid-btn.sel-wgt  { background: var(--accent-dim); border-color: var(--accent); }
+.grid-btn.sel-ftyp { background: var(--orange-dim); border-color: var(--orange); }
+.gb-icon  { font-size: 20px; }
+.gb-label { font-size: 11px; font-weight: 700; color: var(--muted2); line-height: 1.2; }
+.gb-sub   { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+
+/* ── CUSTOM INPUTS ── */
+.custom-panel {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+  display: none; flex-direction: column; gap: 12px;
+}
+.custom-panel.show { display: flex; }
+.input-group { display: flex; flex-direction: column; gap: 6px; }
+.input-label { font-size: 11px; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: .5px; }
+.inp {
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 14px; color: var(--text);
+  font-family: var(--mono); font-size: 15px; width: 100%;
+  outline: none; transition: border-color .15s;
+}
+.inp:focus { border-color: var(--accent); }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+.inp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── NAME ROW (jídlo - vždy viditelné) ── */
+.name-row { margin-bottom: 16px; }
+
+/* ── PREVIEW ── */
+.preview-box {
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 15px 18px; margin-bottom: 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: opacity .2s;
+}
+.preview-box.hidden { opacity: .2; pointer-events: none; }
+.prev-main   { font-size: 15px; font-weight: 800; }
+.prev-detail { font-size: 11px; color: var(--muted2); margin-top: 3px; font-family: var(--mono); }
+.prev-kcal   { font-size: 22px; font-weight: 800; font-family: var(--mono); white-space: nowrap; }
+.prev-kcal.wc { color: var(--green); }
+.prev-kcal.fc { color: var(--orange); }
+.prev-kcal span { font-size: 11px; color: var(--muted); font-weight: 400; }
+
+.add-btn {
+  width: 100%; padding: 17px; border-radius: var(--radius);
+  background: linear-gradient(135deg,var(--accent2),var(--accent));
+  border: none; color: #0f172a; font-family: var(--sans);
+  font-size: 16px; font-weight: 800; cursor: pointer;
+  transition: all .2s; letter-spacing: .3px; margin-bottom: 12px;
+}
+.add-btn.food-btn-color { background: linear-gradient(135deg,var(--green2),var(--green)); }
+.add-btn:active  { transform: scale(.98); }
+.add-btn:disabled { opacity: .3; cursor: default; transform: none; }
+
+.kal-link {
+  display: block; text-align: center; font-size: 12px; color: var(--muted);
+  text-decoration: none; padding: 8px;
+  transition: color .15s;
+}
+.kal-link:hover { color: var(--accent); }
+
+/* ── HISTORIE ── */
+.hist-header { padding: 52px 20px 16px; }
+.hist-title  { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+.hist-sub    { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.hist-list   { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+.hist-day-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 11px 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.hdc-date  { font-size: 12px; font-weight: 700; color: var(--muted2); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hdc-val   { font-size: 13px; font-weight: 800; font-family: var(--mono); white-space: nowrap; }
+.hdc-val.wc { color: var(--accent); }
+.hdc-val.fc { color: var(--green); }
+.hdc-del-btn {
+  opacity: .45; font-size: 15px; cursor: pointer; padding: 4px 2px;
+  border-radius: 6px; transition: opacity .15s, background .15s; flex-shrink: 0;
+}
+.hdc-del-btn:active { opacity: 1; background: rgba(248,113,113,.15); }
+.hist-empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 460px; height: var(--nav-h);
+  background: var(--surface); border-top: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 4px 8px; z-index: 100;
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 8px 4px; border-radius: 12px; cursor: pointer;
+  background: none; border: none; font-family: var(--sans); transition: all .15s;
+}
+.nav-icon  { font-size: 22px; }
+.nav-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.nav-btn.active .nav-label { color: var(--accent); }
+
+/* ── MODALS ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.75);
+  display: none; align-items: flex-end; justify-content: center;
+  z-index: 200; backdrop-filter: blur(4px);
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  width: 100%; max-width: 460px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 24px 24px 0 0; padding: 24px 20px 48px;
+  animation: slideUp .25s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 20px; }
+.modal-title  { font-size: 18px; font-weight: 800; margin-bottom: 20px; }
+.setting-group { margin-bottom: 14px; }
+.setting-label { font-size: 11px; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.modal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 24px; }
+.btn-cancel { padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--muted2); font-family: var(--sans); font-size: 14px; font-weight: 700; cursor: pointer; }
+.btn-save   { padding: 14px; border-radius: 12px; border: none; background: var(--accent); color: #0f172a; font-family: var(--sans); font-size: 14px; font-weight: 800; cursor: pointer; }
+
+/* ── CONFIRM ── */
+.confirm-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.8);
+  display: none; align-items: center; justify-content: center;
+  z-index: 300; padding: 20px; backdrop-filter: blur(4px);
+}
+.confirm-overlay.show { display: flex; }
+.confirm-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 320px;
+  animation: popIn .2s ease;
+}
+@keyframes popIn { from { transform: scale(.9); opacity:0; } to { transform: scale(1); opacity:1; } }
+.confirm-icon { font-size: 36px; text-align: center; margin-bottom: 12px; }
+.confirm-text { font-size: 17px; font-weight: 800; text-align: center; margin-bottom: 6px; }
+.confirm-sub  { font-size: 13px; color: var(--muted2); text-align: center; margin-bottom: 24px; line-height: 1.5; }
+.confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn-no  { padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--muted2); font-family: var(--sans); font-size: 14px; font-weight: 700; cursor: pointer; }
+.btn-yes { padding: 14px; border-radius: 12px; border: none; background: var(--danger); color: #fff; font-family: var(--sans); font-size: 14px; font-weight: 800; cursor: pointer; }
+
+/* ── OBLÍBENÁ JÍDLA ── */
+.fav-section { margin-bottom: 18px; }
+.fav-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; cursor: pointer; user-select: none; padding: 2px 0;
+}
+.fav-section-header .grid-label { margin-bottom: 0; cursor: pointer; }
+.fav-section-arrow {
+  font-size: 12px; color: var(--muted); transition: transform .25s ease;
+}
+.fav-section.collapsed .fav-section-arrow { transform: rotate(-90deg); }
+.fav-section-body {
+  overflow: hidden;
+  transition: max-height .3s ease, opacity .25s ease;
+  max-height: 300px; opacity: 1;
+}
+.fav-section.collapsed .fav-section-body { max-height: 0; opacity: 0; pointer-events: none; }
+.fav-scroll {
+  display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.fav-scroll::-webkit-scrollbar { display: none; }
+.fav-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 11px 13px; flex-shrink: 0;
+  min-width: 110px; max-width: 130px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+  position: relative;
+}
+.fav-card:active { border-color: var(--green); background: var(--green-dim); }
+.fav-card-icon  { font-size: 22px; margin-bottom: 5px; }
+.fav-card-name  { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fav-card-detail{ font-size: 10px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+.fav-card-actions { display: flex; gap: 4px; margin-top: 7px; }
+.fav-act-btn {
+  flex: 1; font-size: 11px; padding: 4px 2px; text-align: center;
+  background: var(--card2); border-radius: 7px; cursor: pointer;
+  border: none; color: var(--muted2); font-family: var(--sans); font-weight: 700;
+  transition: background .15s;
+}
+.fav-act-btn:active { background: var(--border); }
+.fav-empty { font-size: 12px; color: var(--muted); padding: 10px 2px; font-style: italic; }
+
+/* save-fav btn */
+.btn-save-fav {
+  width: 100%; padding: 12px; border-radius: 12px;
+  background: var(--card); border: 1px dashed var(--border);
+  color: var(--muted2); font-family: var(--sans); font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all .15s; margin-bottom: 12px;
+}
+.btn-save-fav:not(:disabled):active { border-color: var(--warn); color: var(--warn); background: #2a2200; }
+.btn-save-fav:disabled { opacity: .3; cursor: default; }
+
+/* ── ICON PICKER ── */
+.icon-picker-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px;
+}
+.icon-pick-btn {
+  font-size: 24px; padding: 10px; border-radius: 10px;
+  background: var(--card2); border: 2px solid transparent;
+  cursor: pointer; text-align: center; transition: all .15s;
+}
+.icon-pick-btn.picked { border-color: var(--green); background: var(--green-dim); }
+.icon-pick-btn:active { transform: scale(.9); }
+
+/* ── KCAL KALKULAČKA ── */
+.kcal-calc {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
+}
+.kcal-calc-title { font-size: 11px; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+.kcal-calc-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin-bottom: 10px; }
+.kcal-calc-sep { font-size: 11px; color: var(--muted); text-align: center; font-family: var(--mono); }
+.kcal-calc-result {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--card2); border-radius: 10px; padding: 10px 14px;
+  min-height: 42px;
+}
+.kcal-calc-val { font-size: 18px; font-weight: 800; font-family: var(--mono); color: var(--orange); }
+.kcal-calc-val span { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 3px; }
+.kcal-calc-use {
+  font-size: 12px; font-weight: 700; padding: 7px 12px;
+  background: var(--orange-dim); border: 1px solid var(--orange); color: var(--orange);
+  border-radius: 8px; cursor: pointer; font-family: var(--sans);
+  transition: all .15s;
+}
+.kcal-calc-use:disabled { opacity: .3; cursor: default; }
+.kcal-calc-use:not(:disabled):active { background: var(--orange); color: #0f172a; }
+
+/* ── OBLÍBENÁ SCREEN ── */
+.oblibena-search-wrap { margin-bottom: 16px; }
+.oblibena-search { font-size: 14px; }
+.oblibena-full-list { display: flex; flex-direction: column; gap: 10px; }
+.oblibena-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 11px 12px;
+  display: flex; align-items: center; gap: 10px;
+  transition: border-color .15s;
+}
+.oblibena-card:active { border-color: var(--green); background: var(--green-dim); }
+.oblibena-card-icon { font-size: 22px; flex-shrink: 0; }
+.oblibena-card-info { flex: 1; min-width: 0; }
+.oblibena-card-name { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oblibena-card-detail { font-size: 11px; color: var(--muted2); font-family: var(--mono); margin-top: 2px; }
+.oblibena-card-actions { display: flex; gap: 5px; flex-shrink: 0; align-items: center; }
+.obl-add-btn {
+  width: 32px; height: 32px; border-radius: 10px; border: none;
+  background: var(--green2); color: #0f172a;
+  font-family: var(--mono); font-size: 18px; font-weight: 800;
+  cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+}
+.obl-add-btn:active { transform: scale(.93); }
+.obl-edit-btn {
+  width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border);
+  background: var(--card2); cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .15s;
+}
+.obl-edit-btn:active { border-color: var(--accent); }
+.obl-del-btn {
+  width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border);
+  background: var(--card2); cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .15s;
+}
+.obl-del-btn:active { border-color: var(--danger); }
+.oblibena-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+.oblibena-empty-icon { font-size: 40px; margin-bottom: 12px; display: block; }
+
+/* ── TOAST ── */
+.toast-wrap { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 400; pointer-events: none; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.toast {
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: 24px; padding: 10px 20px;
+  font-size: 13px; font-weight: 700; color: var(--text);
+  white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  animation: tIn .3s ease;
+}
+.toast.out { animation: tOut .3s ease forwards; }
+@keyframes tIn  { from { opacity:0; transform:translateY(-10px) scale(.95); } to { opacity:1; transform:none; } }
+@keyframes tOut { from { opacity:1; } to { opacity:0; transform:translateY(-8px); } }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ════════════ DNES ════════════ -->
+<div class="screen active" id="screen-dnes">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="greeting" id="greeting">Dobrý den</div>
+      <div class="tdate" id="today-date">–</div>
+    </div>
+    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+  </div>
+
+  <div class="progress-section">
+    <div class="prog-card water">
+      <div class="prog-label">💧 Tekutiny dnes</div>
+      <div class="prog-values">
+        <div class="prog-current wc" id="d-water">0</div>
+        <div class="prog-unit">ml</div>
+        <div class="prog-goal">z <strong id="d-water-goal">2000</strong> ml</div>
+      </div>
+      <div class="track"><div class="fill water" id="d-water-fill" style="width:0%"></div></div>
+      <div class="prog-remain" id="d-water-rem"></div>
+      <div class="prog-last" id="d-water-last"></div>
+    </div>
+    <div class="prog-card food">
+      <div class="prog-label">🔥 Kalorie dnes</div>
+      <div class="prog-values">
+        <div class="prog-current fc" id="d-kcal">0</div>
+        <div class="prog-unit">kcal</div>
+        <div class="prog-goal">z <strong id="d-kcal-goal">2500</strong> kcal</div>
+      </div>
+      <div class="track"><div class="fill food" id="d-kcal-fill" style="width:0%"></div></div>
+      <div class="prog-remain" id="d-kcal-rem"></div>
+      <div class="prog-last" id="d-food-last"></div>
+    </div>
+  </div>
+
+  <div class="consump-line" id="consump-line">
+    <span class="consump-icon">⚖️</span>
+    <span class="consump-text" id="consump-text">Celkem zkonzumováno: <strong>0 g</strong></span>
+  </div>
+
+  <div class="today-list" id="today-list"></div>
+</div>
+
+<!-- ════════════ PITÍ ════════════ -->
+<div class="screen" id="screen-piti">
+  <div class="screen-header">
+    <button class="back-btn" onclick="goTo('dnes')">←</button>
+    <div class="screen-title">💧 Přidat pití</div>
+  </div>
+  <div class="screen-body">
+
+    <div class="grid-label">Objem</div>
+    <div class="btn-grid" id="vol-grid">
+      <div class="grid-btn" onclick="selVol(this,250)">
+        <div class="gb-icon">🥛</div>
+        <div class="gb-label">Sklenka</div>
+        <div class="gb-sub">250 ml</div>
+      </div>
+      <div class="grid-btn" onclick="selVol(this,500)">
+        <div class="gb-icon">🍶</div>
+        <div class="gb-label">Láhev</div>
+        <div class="gb-sub">500 ml</div>
+      </div>
+      <div class="grid-btn" onclick="selVol(this,1000)">
+        <div class="gb-icon">🫙</div>
+        <div class="gb-label">Velká</div>
+        <div class="gb-sub">1 000 ml</div>
+      </div>
+      <div class="grid-btn" onclick="selVol(this,'custom')">
+        <div class="gb-icon">✏️</div>
+        <div class="gb-label">Jiné</div>
+        <div class="gb-sub">vlastní</div>
+      </div>
+    </div>
+
+    <div class="grid-label">Typ nápoje</div>
+    <div class="btn-grid" id="typ-grid">
+      <div class="grid-btn" data-n="Voda"      data-k="0"  data-i="💧" onclick="selTyp(this)">
+        <div class="gb-icon">💧</div>
+        <div class="gb-label">Voda</div>
+        <div class="gb-sub">0 kcal</div>
+      </div>
+      <div class="grid-btn" data-n="Minerálka" data-k="0"  data-i="🫧" onclick="selTyp(this)">
+        <div class="gb-icon">🫧</div>
+        <div class="gb-label">Minerálka</div>
+        <div class="gb-sub">0 kcal</div>
+      </div>
+      <div class="grid-btn" data-n="Cola"      data-k="42" data-i="🥤" onclick="selTyp(this)">
+        <div class="gb-icon">🥤</div>
+        <div class="gb-label">Cola</div>
+        <div class="gb-sub">42/100ml</div>
+      </div>
+      <div class="grid-btn" data-n="__custom" data-k="custom" data-i="✏️" onclick="selTyp(this)">
+        <div class="gb-icon">✏️</div>
+        <div class="gb-label">Jiné</div>
+        <div class="gb-sub">vlastní</div>
+      </div>
+    </div>
+
+    <div class="custom-panel" id="drink-custom">
+      <div id="d-vol-wrap" style="display:none">
+        <div class="input-group">
+          <div class="input-label">Objem (ml)</div>
+          <input class="inp" type="number" id="d-inp-vol" placeholder="350" oninput="updDrinkPreview()">
+        </div>
+      </div>
+      <div id="d-typ-wrap" style="display:none">
+        <div class="inp-row">
+          <div class="input-group">
+            <div class="input-label">Název</div>
+            <input class="inp" type="text" id="d-inp-name" placeholder="Džus…" oninput="updDrinkPreview()">
+          </div>
+          <div class="input-group">
+            <div class="input-label">Kcal/100ml</div>
+            <input class="inp" type="number" id="d-inp-k100" placeholder="45" oninput="updDrinkPreview()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-box hidden" id="drink-preview">
+      <div>
+        <div class="prev-main"   id="dp-main">–</div>
+        <div class="prev-detail" id="dp-detail">–</div>
+      </div>
+      <div class="prev-kcal wc" id="dp-kcal">– <span>kcal</span></div>
+    </div>
+
+    <button class="add-btn" id="drink-add-btn" onclick="addDrink()" disabled>Přidat</button>
+  </div>
+</div>
+
+<!-- ════════════ JÍDLO ════════════ -->
+<div class="screen" id="screen-jidlo">
+  <div class="screen-header">
+    <button class="back-btn" onclick="goTo('dnes')">←</button>
+    <div class="screen-title">🍽️ Přidat jídlo</div>
+  </div>
+  <div class="screen-body">
+
+    <!-- Název vždy viditelný -->
+    <div class="name-row">
+      <div class="grid-label">Název jídla</div>
+      <input class="inp" type="text" id="f-inp-name" placeholder="Kuřecí salát…" oninput="updFoodPreview()">
+    </div>
+
+    <div class="grid-label">Váha</div>
+    <div class="btn-grid" id="wgt-grid">
+      <div class="grid-btn" onclick="selWgt(this,10)">
+        <div class="gb-icon">🫘</div>
+        <div class="gb-label">Malá</div>
+        <div class="gb-sub">10 g</div>
+      </div>
+      <div class="grid-btn" onclick="selWgt(this,100)">
+        <div class="gb-icon">🍱</div>
+        <div class="gb-label">Střední</div>
+        <div class="gb-sub">100 g</div>
+      </div>
+      <div class="grid-btn" onclick="selWgt(this,250)">
+        <div class="gb-icon">🥘</div>
+        <div class="gb-label">Velká</div>
+        <div class="gb-sub">250 g</div>
+      </div>
+      <div class="grid-btn" onclick="selWgt(this,'custom')">
+        <div class="gb-icon">✏️</div>
+        <div class="gb-label">Jiné</div>
+        <div class="gb-sub">vlastní</div>
+      </div>
+    </div>
+
+    <div class="grid-label">Kalorie (celkem)</div>
+    <div class="btn-grid" id="ftyp-grid">
+      <div class="grid-btn" data-k="150" data-i="🥗" onclick="selFtyp(this)">
+        <div class="gb-icon">🥗</div>
+        <div class="gb-label">Lehké</div>
+        <div class="gb-sub">150 kcal</div>
+      </div>
+      <div class="grid-btn" data-k="350" data-i="🍚" onclick="selFtyp(this)">
+        <div class="gb-icon">🍚</div>
+        <div class="gb-label">Běžné</div>
+        <div class="gb-sub">350 kcal</div>
+      </div>
+      <div class="grid-btn" data-k="600" data-i="🍔" onclick="selFtyp(this)">
+        <div class="gb-icon">🍔</div>
+        <div class="gb-label">Vydatné</div>
+        <div class="gb-sub">600 kcal</div>
+      </div>
+      <div class="grid-btn" data-k="custom" data-i="✏️" onclick="selFtyp(this)">
+        <div class="gb-icon">✏️</div>
+        <div class="gb-label">Jiné</div>
+        <div class="gb-sub">vlastní</div>
+      </div>
+    </div>
+
+    <div class="custom-panel" id="food-custom">
+      <div id="f-wgt-wrap" style="display:none">
+        <div class="input-group">
+          <div class="input-label">Váha (g)</div>
+          <input class="inp" type="number" id="f-inp-wgt" placeholder="150" oninput="updFoodPreview()">
+        </div>
+      </div>
+      <div id="f-ftyp-wrap" style="display:none">
+        <div class="input-group">
+          <div class="input-label">Kalorie (kcal)</div>
+          <input class="inp" type="number" id="f-inp-k100" placeholder="280" oninput="updFoodPreview()">
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-box hidden" id="food-preview">
+      <div>
+        <div class="prev-main"   id="fp-main">–</div>
+        <div class="prev-detail" id="fp-detail">–</div>
+      </div>
+      <div class="prev-kcal fc" id="fp-kcal">– <span>kcal</span></div>
+    </div>
+
+    <!-- ── KCAL KALKULAČKA ── -->
+    <div class="kcal-calc">
+      <div class="kcal-calc-title">🧮 Kalkulačka kalorií</div>
+      <div class="kcal-calc-row">
+        <div class="input-group">
+          <div class="input-label">100 g =</div>
+          <input class="inp" type="number" id="calc-per100" placeholder="230" oninput="updCalc()">
+        </div>
+        <div class="kcal-calc-sep">→</div>
+        <div class="input-group">
+          <div class="input-label">Váha (g)</div>
+          <input class="inp" type="number" id="calc-weight" placeholder="125" oninput="updCalc()">
+        </div>
+      </div>
+      <div class="kcal-calc-result">
+        <div class="kcal-calc-val" id="calc-result">– <span>kcal</span></div>
+        <button class="kcal-calc-use" id="calc-use-btn" onclick="useCalcResult()" disabled>Použít ↑</button>
+      </div>
+    </div>
+
+    <button class="btn-save-fav" id="btn-save-fav" onclick="openSaveFav()" disabled>⭐ Uložit jako oblíbené</button>
+
+    <button class="add-btn food-btn-color" id="food-add-btn" onclick="addFood()" disabled>Přidat</button>
+    <a class="kal-link" href="https://www.kaloricketabulky.cz/" target="_blank" rel="noopener">
+      🔍 Vyhledat kalorie na kaloricketabulky.cz ↗
+    </a>
+  </div>
+</div>
+
+<!-- ════════════ HISTORIE ════════════ -->
+<div class="screen" id="screen-hist">
+  <div class="hist-header">
+    <div class="hist-title">📋 Historie</div>
+    <div class="hist-sub">Přehled minulých dní</div>
+  </div>
+  <div class="hist-list" id="hist-list"></div>
+</div>
+
+<!-- ════════════ OBLÍBENÁ JÍDLA ════════════ -->
+<div class="screen" id="screen-oblibena">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="greeting">Rychlý výběr</div>
+      <div class="tdate">⭐ Oblíbená jídla</div>
+    </div>
+    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+  </div>
+  <div class="screen-body">
+    <div class="oblibena-search-wrap">
+      <input class="inp oblibena-search" type="text" id="oblibena-search" placeholder="🔍 Hledat oblíbené…" oninput="renderOblibena()">
+    </div>
+    <div id="oblibena-list"></div>
+  </div>
+</div>
+
+<!-- ── BOTTOM NAV ── -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-dnes"  onclick="goTo('dnes')">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">Dnes</span>
+  </button>
+  <button class="nav-btn" id="nav-piti" onclick="goTo('piti')">
+    <span class="nav-icon">💧</span>
+    <span class="nav-label">Pití</span>
+  </button>
+  <button class="nav-btn" id="nav-oblibena" onclick="goTo('oblibena')">
+    <span class="nav-icon">⭐</span>
+    <span class="nav-label">Oblíbená</span>
+  </button>
+  <button class="nav-btn" id="nav-jidlo" onclick="goTo('jidlo')">
+    <span class="nav-icon">🍽️</span>
+    <span class="nav-label">Jídlo</span>
+  </button>
+  <button class="nav-btn" id="nav-hist" onclick="goTo('hist')">
+    <span class="nav-icon">📋</span>
+    <span class="nav-label">Historie</span>
+  </button>
+</nav>
+</div><!-- .app -->
+
+<!-- ── SAVE FAV MODAL ── -->
+<div class="modal-overlay" id="savefav-modal" onclick="if(event.target===this)closeSaveFav()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⭐ Uložit oblíbené jídlo</div>
+    <div class="setting-group">
+      <div class="setting-label">Název</div>
+      <input class="inp" type="text" id="sf-name" placeholder="Kuřecí salát…">
+    </div>
+    <div class="setting-group">
+      <div class="setting-label">Vyber ikonu</div>
+      <div class="icon-picker-grid" id="sf-icon-grid">
+        <button class="icon-pick-btn" onclick="pickIcon(this,'🍌')">🍌</button>
+        <button class="icon-pick-btn" onclick="pickIcon(this,'🥐')">🥐</button>
+        <button class="icon-pick-btn" onclick="pickIcon(this,'🍳')">🍳</button>
+        <button class="icon-pick-btn" onclick="pickIcon(this,'🥓')">🥓</button>
+        <button class="icon-pick-btn" onclick="pickIcon(this,'🥩')">🥩</button>
+        <button class="icon-pick-btn" onclick="pickIcon(this,'🧀')">🧀</button>
+        <button class="icon-pick-btn" onclick="pickIcon(this,'🥣')">🥣</button>
+        <button class="icon-pick-btn" onclick="pickIcon(this,'🍽️')">🍽️</button>
+        <button class="icon-pick-btn" onclick="pickIcon(this,'🥗')">🥗</button>
+        <button class="icon-pick-btn" onclick="pickIcon(this,'🍫')">🍫</button>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeSaveFav()">Zrušit</button>
+      <button class="btn-save" onclick="confirmSaveFav()">Uložit ⭐</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT FAV MODAL ── -->
+<div class="modal-overlay" id="editfav-modal" onclick="if(event.target===this)closeEditFav()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ Upravit oblíbené</div>
+    <div class="setting-group">
+      <div class="setting-label">Název</div>
+      <input class="inp" type="text" id="ef-name" placeholder="Název…">
+    </div>
+    <div class="setting-group">
+      <div class="setting-label">Váha (g)</div>
+      <input class="inp" type="number" id="ef-wgt" placeholder="100">
+    </div>
+    <div class="setting-group">
+      <div class="setting-label">Kalorie (kcal)</div>
+      <input class="inp" type="number" id="ef-kcal" placeholder="350">
+    </div>
+    <div class="setting-group">
+      <div class="setting-label">Ikona</div>
+      <div class="icon-picker-grid" id="ef-icon-grid">
+        <button class="icon-pick-btn" onclick="pickIconEf(this,'🍌')">🍌</button>
+        <button class="icon-pick-btn" onclick="pickIconEf(this,'🥐')">🥐</button>
+        <button class="icon-pick-btn" onclick="pickIconEf(this,'🍳')">🍳</button>
+        <button class="icon-pick-btn" onclick="pickIconEf(this,'🥓')">🥓</button>
+        <button class="icon-pick-btn" onclick="pickIconEf(this,'🥩')">🥩</button>
+        <button class="icon-pick-btn" onclick="pickIconEf(this,'🧀')">🧀</button>
+        <button class="icon-pick-btn" onclick="pickIconEf(this,'🥣')">🥣</button>
+        <button class="icon-pick-btn" onclick="pickIconEf(this,'🍽️')">🍽️</button>
+        <button class="icon-pick-btn" onclick="pickIconEf(this,'🥗')">🥗</button>
+        <button class="icon-pick-btn" onclick="pickIconEf(this,'🍫')">🍫</button>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeEditFav()">Zrušit</button>
+      <button class="btn-save-green" onclick="confirmEditFav()">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT MODAL ── -->
+<div class="modal-overlay" id="edit-modal" onclick="if(event.target===this)closeEdit()">
+  <div class="edit-modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="edit-title">✏️ Upravit záznam</div>
+    <div id="edit-drink-fields">
+      <div class="setting-group">
+        <div class="setting-label">Název</div>
+        <input class="inp" type="text" id="edit-name" placeholder="Název…">
+      </div>
+      <div class="setting-group" id="edit-vol-group">
+        <div class="setting-label">Objem (ml)</div>
+        <input class="inp" type="number" id="edit-vol" placeholder="500">
+      </div>
+      <div class="setting-group" id="edit-wgt-group" style="display:none">
+        <div class="setting-label">Váha (g)</div>
+        <input class="inp" type="number" id="edit-wgt" placeholder="100">
+      </div>
+      <div class="setting-group">
+        <div class="setting-label">Kalorie (kcal)</div>
+        <input class="inp" type="number" id="edit-kcal" placeholder="0">
+      </div>
+    </div>
+    <div class="edit-modal-btns">
+      <button class="btn-cancel" onclick="closeEdit()">Zrušit</button>
+      <button class="btn-save-green" onclick="saveEdit()">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SETTINGS ── -->
+<div class="modal-overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚙️ Nastavení</div>
+    <div class="setting-group">
+      <div class="setting-label">Jméno</div>
+      <input class="inp" type="text" id="s-name" placeholder="Vaše jméno (volitelné)">
+    </div>
+    <div class="setting-group">
+      <div class="setting-label">Cíl tekutin (ml / den)</div>
+      <input class="inp" type="number" id="s-water" placeholder="2000">
+    </div>
+    <div class="setting-group">
+      <div class="setting-label">Cíl kalorií (kcal / den)</div>
+      <input class="inp" type="number" id="s-kcal" placeholder="2500">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeSettings()">Zrušit</button>
+      <button class="btn-save"   onclick="saveSettings()">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONFIRM ── -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-text">Smazat záznam?</div>
+    <div class="confirm-sub" id="confirm-sub">Tuto akci nelze vrátit.</div>
+    <div class="confirm-btns">
+      <button class="btn-no"  onclick="confirmNo()">Ne</button>
+      <button class="btn-yes" onclick="confirmYes_override()">Ano, smazat</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+// ══════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════
+const SKEY = 'fll_v2';
+let cfg  = { name:'', waterGoal:2000, kcalGoal:2500 };
+let data = {}; // { "YYYY-MM-DD": [{id,time,icon,name,vol,wgt,kcal,type}] }
+let favs = []; // [{id, icon, name, wgt, kcal}]
+
+function todayKey(){ return new Date().toISOString().split('T')[0]; }
+
+function load(){
+  try {
+    const r = localStorage.getItem(SKEY);
+    if(r){ const p=JSON.parse(r); cfg={...cfg,...p.cfg}; data=p.data||{}; favs=p.favs||[]; }
+  } catch(e){}
+}
+function persist(){ localStorage.setItem(SKEY, JSON.stringify({cfg, data, favs})); }
+
+function dayList(key){ return data[key]||[]; }
+function todayList(){ return dayList(todayKey()); }
+function dayWater(k){ return dayList(k).filter(e=>e.type==='drink').reduce((s,e)=>s+e.vol,0); }
+function dayKcal(k) { return dayList(k).reduce((s,e)=>s+(e.kcal||0),0); }
+
+function addEntry(e){
+  const k=todayKey();
+  if(!data[k]) data[k]=[];
+  data[k].unshift(e);
+  persist();
+}
+function delEntry(id){
+  const k=todayKey();
+  if(!data[k]) return;
+  data[k]=data[k].filter(e=>String(e.id)!==String(id));
+  persist();
+}
+
+// ══════════════════════════════════════
+// NAV
+// ══════════════════════════════════════
+function goTo(scr){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+scr).classList.add('active');
+  const nb=document.getElementById('nav-'+scr);
+  if(nb) nb.classList.add('active');
+  if(scr==='dnes') renderDnes();
+  if(scr==='hist') renderHist();
+  if(scr==='piti') resetDrink();
+  if(scr==='jidlo') { resetFood(); }
+  if(scr==='oblibena') renderOblibena();
+}
+
+// ══════════════════════════════════════
+// DNES
+// ══════════════════════════════════════
+// stav sbalení sekcí — false = sbaleno (výchozí)
+const tlState = { drinks: false, foods: false };
+
+function toggleSection(key){
+  tlState[key] = !tlState[key];
+  renderDnes();
+}
+
+function toggleFavSection(){
+  el('fav-section').classList.toggle('collapsed');
+}
+
+function renderDnes(){
+  const water=dayWater(todayKey()), kcal=dayKcal(todayKey());
+  const wG=cfg.waterGoal, kG=cfg.kcalGoal;
+  const h=new Date().getHours();
+  const nm=cfg.name?`, ${cfg.name}`:'';
+  document.getElementById('greeting').textContent=(h<10?'Dobré ráno':h<18?'Dobrý den':'Dobrý večer')+nm;
+  document.getElementById('today-date').textContent=
+    new Date().toLocaleDateString('cs-CZ',{weekday:'long',day:'numeric',month:'long'});
+
+  // water
+  set('d-water', water);
+  set('d-water-goal', wG);
+  const wP=Math.min((water/wG)*100,100);
+  el('d-water-fill').style.width=wP+'%';
+  const wRem=el('d-water-rem');
+  if(water>=wG){ wRem.textContent='✓ Cíl splněn!'; wRem.className='prog-remain ok'; }
+  else { wRem.textContent=`Zbývá ${wG-water} ml`; wRem.className='prog-remain'; }
+
+  // kcal
+  set('d-kcal', kcal);
+  set('d-kcal-goal', kG);
+  const kP=Math.min((kcal/kG)*100,100);
+  const kf=el('d-kcal-fill');
+  kf.style.width=kP+'%';
+  kf.className='fill '+(kP>=100?'danger':kP>=85?'warn':'food');
+  const kRem=el('d-kcal-rem');
+  if(kcal>=kG){ kRem.textContent='⚠ Kalorický limit dosažen'; kRem.className='prog-remain over'; }
+  else { kRem.textContent=`Zbývá ${kG-kcal} kcal`; kRem.className='prog-remain food-ok'; }
+
+  // consumption summary
+  const totalWgt  = todayList().filter(e=>e.type==='food').reduce((s,e)=>s+(e.wgt||0),0);
+  const totalMl   = dayWater(todayKey());
+  const totalGram = totalWgt + totalMl; // 1 ml = 1 g
+  const parts = [];
+  if(totalMl>0)  parts.push(`💧 ${totalMl} ml`);
+  if(totalWgt>0) parts.push(`🍽️ ${totalWgt} g`);
+  const detail = parts.length ? ` (${parts.join(' + ')})` : '';
+  el('consump-text').innerHTML = `Celkem zkonzumováno: <strong>${totalGram} g</strong>${detail}`;
+
+  // last entry timers — samostatná logika pro tekutiny a jídlo
+  function diffMins(entries){
+    if(!entries.length) return null;
+    const sorted=[...entries].sort((a,b)=>b.time.localeCompare(a.time));
+    const [lh,lm]=sorted[0].time.split(':').map(Number);
+    const now2=new Date();
+    let diff=now2.getHours()*60+now2.getMinutes()-lh*60-lm;
+    if(diff<0) diff+=1440;
+    return diff;
+  }
+  function fmtDiff(diff){
+    if(diff===0) return 'právě teď';
+    if(diff<60)  return `před ${diff} min`;
+    const h=Math.floor(diff/60), m=diff%60;
+    return m>0?`před ${h}h ${m}min`:`před ${h}h`;
+  }
+  function waterLabel(entries){
+    const diff=diffMins(entries); if(diff===null) return null;
+    const text=fmtDiff(diff);
+    let cls;
+    if(diff<30)       cls='fresh';
+    else if(diff<60)  cls='warn-time';
+    else              cls='danger-time';
+    return { text, cls };
+  }
+  function foodLabel(entries){
+    const diff=diffMins(entries); if(diff===null) return null;
+    const text=fmtDiff(diff);
+    let cls;
+    if(diff<60)       cls='fresh';
+    else if(diff<120) cls='warn-time';
+    else              cls='food-old';
+    return { text, cls };
+  }
+
+  const drinkEntries=todayList().filter(e=>e.type==='drink');
+  const foodEntries =todayList().filter(e=>e.type==='food');
+
+  const wLastEl=el('d-water-last');
+  const wLast=waterLabel(drinkEntries);
+  if(wLast){ wLastEl.innerHTML=`<span class="last-dot"></span>naposledy ${wLast.text}`; wLastEl.className='prog-last'+(wLast.cls?' '+wLast.cls:''); wLastEl.style.display='flex'; }
+  else { wLastEl.style.display='none'; }
+
+  const fLastEl=el('d-food-last');
+  const fLast=foodLabel(foodEntries);
+  if(fLast){ fLastEl.innerHTML=`<span class="last-dot"></span>naposledy ${fLast.text}`; fLastEl.className='prog-last'+(fLast.cls?' '+fLast.cls:''); fLastEl.style.display='flex'; }
+  else { fLastEl.style.display='none'; }
+
+  // list
+  const list=todayList();
+  const c=el('today-list');
+  if(!list.length){
+    c.innerHTML=`<div class="tl-empty"><span class="tl-empty-icon">📭</span>Dnes zatím žádné záznamy.<br>Přidej pití nebo jídlo!</div>`;
+    return;
+  }
+
+  const drinks=list.filter(e=>e.type==='drink');
+  const foods =list.filter(e=>e.type==='food');
+  let html='';
+
+  if(drinks.length){
+    const collapsed = tlState.drinks ? '' : 'collapsed';
+    html+=`<div class="tl-section ${collapsed}" id="tl-drinks">
+      <div class="tl-section-header" onclick="toggleSection('drinks')">
+        <div class="tl-section-left">
+          <span class="tl-section-label">💧 Pití</span>
+          <span class="tl-section-count">${drinks.length}×</span>
+        </div>
+        <span class="tl-section-arrow">▼</span>
+      </div>
+      <div class="tl-section-body">
+        ${drinks.map(e=>tlItem(e)).join('')}
+      </div>
+    </div>`;
+  }
+  if(foods.length){
+    const collapsed = tlState.foods ? '' : 'collapsed';
+    html+=`<div class="tl-section ${collapsed}" id="tl-foods">
+      <div class="tl-section-header" onclick="toggleSection('foods')">
+        <div class="tl-section-left">
+          <span class="tl-section-label">🍽️ Jídlo</span>
+          <span class="tl-section-count">${foods.length}×</span>
+        </div>
+        <span class="tl-section-arrow">▼</span>
+      </div>
+      <div class="tl-section-body">
+        ${foods.map(e=>tlItem(e)).join('')}
+      </div>
+    </div>`;
+  }
+  c.innerHTML=html;
+}
+
+function tlItem(e){
+  const detail = e.type==='drink'
+    ? `${e.vol} ml${e.kcal>0?' · '+e.kcal+' kcal':''}`
+    : `${e.wgt} g · ${e.kcal} kcal`;
+  return `<div class="tl-item" data-id="${e.id}" onclick="openEdit(this)">
+    <div class="tl-icon">${e.icon}</div>
+    <div class="tl-info">
+      <div class="tl-name">${esc(e.name)}</div>
+      <div class="tl-detail">${detail}</div>
+    </div>
+    <div class="tl-time">${e.time}</div>
+    <div class="tl-del" onclick="event.stopPropagation();askDel(this.closest('.tl-item'))">🗑️</div>
+  </div>`;
+}
+
+// ══════════════════════════════════════
+// DELETE
+// ══════════════════════════════════════
+let pendingId=null;
+
+function askDel(itemEl){
+  const id = itemEl.getAttribute('data-id');
+  const name = itemEl.querySelector('.tl-name').textContent;
+  pendingId = id;
+  el('confirm-sub').textContent=`„${name}"`;
+  el('confirm-overlay').classList.add('show');
+}
+function confirmYes(){
+  if(pendingId){ delEntry(pendingId); pendingId=null; }
+  el('confirm-overlay').classList.remove('show');
+  renderDnes();
+  toast('Záznam smazán 🗑️');
+}
+function confirmNo(){
+  pendingId=null;
+  el('confirm-overlay').classList.remove('show');
+}
+
+// ── MAZÁNÍ DNE V HISTORII ──
+let pendingDayKey=null;
+function askDelDay(key, label){
+  pendingDayKey=key;
+  el('confirm-sub').textContent=`Celý den: ${label}`;
+  el('confirm-overlay').classList.add('show');
+}
+function confirmYes_override(){
+  if(pendingFavId){
+    favs=favs.filter(f=>f.id!==pendingFavId); pendingFavId=null;
+    persist();
+    el('confirm-overlay').classList.remove('show');
+    renderFavs();
+    toast('Oblíbené smazáno 🗑️');
+  } else if(pendingDayKey){
+    delete data[pendingDayKey]; pendingDayKey=null;
+    persist();
+    el('confirm-overlay').classList.remove('show');
+    renderHist();
+    toast('Den smazán 🗑️');
+  } else {
+    confirmYes();
+  }
+}
+
+// ══════════════════════════════════════
+// EDIT
+// ══════════════════════════════════════
+let editId=null;
+
+function openEdit(itemEl){
+  const id=itemEl.getAttribute('data-id');
+  const entry=todayList().find(e=>String(e.id)===String(id));
+  if(!entry) return;
+  editId=id;
+  el('edit-title').textContent = entry.type==='drink' ? '✏️ Upravit pití' : '✏️ Upravit jídlo';
+  el('edit-name').value  = entry.name;
+  el('edit-kcal').value  = entry.kcal||0;
+  if(entry.type==='drink'){
+    el('edit-vol-group').style.display='block';
+    el('edit-wgt-group').style.display='none';
+    el('edit-vol').value = entry.vol||0;
+  } else {
+    el('edit-vol-group').style.display='none';
+    el('edit-wgt-group').style.display='block';
+    el('edit-wgt').value = entry.wgt||0;
+  }
+  el('edit-modal').classList.add('show');
+}
+function closeEdit(){
+  editId=null;
+  el('edit-modal').classList.remove('show');
+}
+function saveEdit(){
+  const k=todayKey();
+  const list=data[k]||[];
+  const idx=list.findIndex(e=>String(e.id)===String(editId));
+  if(idx<0){ closeEdit(); return; }
+  const entry=list[idx];
+  entry.name = el('edit-name').value.trim() || entry.name;
+  entry.kcal = parseInt(el('edit-kcal').value)||0;
+  if(entry.type==='drink') entry.vol = parseInt(el('edit-vol').value)||entry.vol;
+  else                     entry.wgt = parseInt(el('edit-wgt').value)||entry.wgt;
+  persist();
+  closeEdit();
+  renderDnes();
+  toast('Záznam upraven ✓');
+}
+
+// ══════════════════════════════════════
+// PITÍ STATE
+// ══════════════════════════════════════
+let dVol=null, dTyp=null;
+
+function resetDrink(){
+  dVol=null; dTyp=null;
+  el('vol-grid').querySelectorAll('.grid-btn').forEach(b=>b.classList.remove('sel-vol'));
+  el('typ-grid').querySelectorAll('.grid-btn').forEach(b=>b.classList.remove('sel-typ'));
+  el('d-vol-wrap').style.display='none';
+  el('d-typ-wrap').style.display='none';
+  el('drink-custom').classList.remove('show');
+  el('d-inp-vol').value='';
+  el('d-inp-name').value='';
+  el('d-inp-k100').value='';
+  el('drink-preview').classList.add('hidden');
+  el('drink-add-btn').disabled=true;
+}
+
+function selVol(btn,val){
+  el('vol-grid').querySelectorAll('.grid-btn').forEach(b=>b.classList.remove('sel-vol'));
+  btn.classList.add('sel-vol');
+  dVol=val;
+  el('d-vol-wrap').style.display=(val==='custom')?'block':'none';
+  syncPanel('drink-custom','d-vol-wrap','d-typ-wrap');
+  updDrinkPreview();
+}
+
+function selTyp(btn){
+  el('typ-grid').querySelectorAll('.grid-btn').forEach(b=>b.classList.remove('sel-typ'));
+  btn.classList.add('sel-typ');
+  const isC=btn.dataset.n==='__custom';
+  dTyp = isC ? {name:'',k100:0,icon:'🥤',custom:true}
+             : {name:btn.dataset.n, k100:parseFloat(btn.dataset.k), icon:btn.dataset.i};
+  el('d-typ-wrap').style.display=isC?'block':'none';
+  syncPanel('drink-custom','d-vol-wrap','d-typ-wrap');
+  updDrinkPreview();
+}
+
+function syncPanel(panelId, w1, w2){
+  const show = el(w1).style.display!=='none' || el(w2).style.display!=='none';
+  el(panelId).classList.toggle('show', show);
+}
+
+function resolveDVol(){
+  if(!dVol) return null;
+  if(dVol==='custom'){ const v=parseInt(el('d-inp-vol').value); return v>0?v:null; }
+  return dVol;
+}
+function resolveDTyp(){
+  if(!dTyp) return null;
+  if(dTyp.custom){
+    const n=el('d-inp-name').value.trim();
+    return n?{name:n, k100:parseFloat(el('d-inp-k100').value)||0, icon:'🥤'}:null;
+  }
+  return dTyp;
+}
+
+function updDrinkPreview(){
+  const vol=resolveDVol(), typ=resolveDTyp();
+  const box=el('drink-preview'), btn=el('drink-add-btn');
+  if(!vol||!typ){ box.classList.add('hidden'); btn.disabled=true; return; }
+  const kcal=Math.round((typ.k100/100)*vol);
+  box.classList.remove('hidden');
+  el('dp-main').textContent=`${typ.icon} ${typ.name} – ${vol} ml`;
+  el('dp-detail').textContent=typ.k100>0?`${typ.k100} kcal / 100 ml`:'bez kalorií';
+  el('dp-kcal').innerHTML=`${kcal} <span>kcal</span>`;
+  btn.disabled=false;
+}
+
+function addDrink(){
+  const vol=resolveDVol(), typ=resolveDTyp();
+  if(!vol||!typ) return;
+  const kcal=Math.round((typ.k100/100)*vol);
+  addEntry({ id:uid(), time:now(), icon:typ.icon, name:typ.name, vol, kcal, type:'drink' });
+  toast(`${typ.icon} ${typ.name} ${vol} ml přidáno`);
+  goTo('dnes');
+}
+
+// ══════════════════════════════════════
+// JÍDLO STATE
+// ══════════════════════════════════════
+let fWgt=null, fTyp=null;
+
+function resetFood(){
+  fWgt=null; fTyp=null;
+  el('wgt-grid').querySelectorAll('.grid-btn').forEach(b=>b.classList.remove('sel-wgt'));
+  el('ftyp-grid').querySelectorAll('.grid-btn').forEach(b=>b.classList.remove('sel-ftyp'));
+  el('f-wgt-wrap').style.display='none';
+  el('f-ftyp-wrap').style.display='none';
+  el('food-custom').classList.remove('show');
+  el('f-inp-name').value='';
+  el('f-inp-wgt').value='';
+  el('f-inp-k100').value='';
+  el('food-preview').classList.add('hidden');
+  el('food-add-btn').disabled=true;
+  el('btn-save-fav').disabled=true;
+  el('calc-per100').value='';
+  el('calc-weight').value='';
+  el('calc-result').innerHTML='– <span>kcal</span>';
+  el('calc-use-btn').disabled=true;
+}
+
+function selWgt(btn,val){
+  el('wgt-grid').querySelectorAll('.grid-btn').forEach(b=>b.classList.remove('sel-wgt'));
+  btn.classList.add('sel-wgt');
+  fWgt=val;
+  el('f-wgt-wrap').style.display=(val==='custom')?'block':'none';
+  syncPanel('food-custom','f-wgt-wrap','f-ftyp-wrap');
+  updFoodPreview();
+}
+
+function selFtyp(btn){
+  el('ftyp-grid').querySelectorAll('.grid-btn').forEach(b=>b.classList.remove('sel-ftyp'));
+  btn.classList.add('sel-ftyp');
+  const isC=btn.dataset.k==='custom';
+  fTyp = isC ? {kcal:0,icon:'✏️',custom:true}
+             : {kcal:parseFloat(btn.dataset.k), icon:btn.dataset.i};
+  el('f-ftyp-wrap').style.display=isC?'block':'none';
+  syncPanel('food-custom','f-wgt-wrap','f-ftyp-wrap');
+  updFoodPreview();
+}
+
+function resolveFWgt(){
+  if(!fWgt) return null;
+  if(fWgt==='custom'){ const v=parseInt(el('f-inp-wgt').value); return v>0?v:null; }
+  return fWgt;
+}
+function resolveFTyp(){
+  if(!fTyp) return null;
+  if(fTyp.custom){ return {kcal:parseFloat(el('f-inp-k100').value)||0, icon:'🍽️'}; }
+  return fTyp;
+}
+
+function updFoodPreview(){
+  const name=el('f-inp-name').value.trim();
+  const wgt=resolveFWgt(), typ=resolveFTyp();
+  const box=el('food-preview'), btn=el('food-add-btn');
+  const favBtn=el('btn-save-fav');
+  if(!name||!wgt||!typ){ box.classList.add('hidden'); btn.disabled=true; favBtn.disabled=true; return; }
+  const kcal = typ.kcal;
+  box.classList.remove('hidden');
+  el('fp-main').textContent=`${typ.icon} ${name} – ${wgt} g`;
+  el('fp-detail').textContent=`${kcal} kcal celkem`;
+  el('fp-kcal').innerHTML=`${kcal} <span>kcal</span>`;
+  btn.disabled=false;
+  favBtn.disabled=false;
+}
+
+function addFood(){
+  const name=el('f-inp-name').value.trim();
+  const wgt=resolveFWgt(), typ=resolveFTyp();
+  if(!name||!wgt||!typ) return;
+  addEntry({ id:uid(), time:now(), icon:typ.icon, name, wgt, kcal:typ.kcal, type:'food' });
+  toast(`${typ.icon} ${name} ${wgt} g přidáno`);
+  goTo('dnes');
+}
+
+// ══════════════════════════════════════
+// OBLÍBENÁ JÍDLA
+// ══════════════════════════════════════
+function renderFavs(){
+  // refresh oblibena screen if it's active
+  if(el('screen-oblibena').classList.contains('active')) renderOblibena();
+}
+
+// ══════════════════════════════════════
+// OBLÍBENÁ — ZÁLOŽKA
+// ══════════════════════════════════════
+function renderOblibena(){
+  const q=(el('oblibena-search')||{value:''}).value.trim().toLowerCase();
+  const filtered = q ? favs.filter(f=>f.name.toLowerCase().includes(q)) : favs;
+  const c=el('oblibena-list');
+  if(!favs.length){
+    c.innerHTML=`<div class="oblibena-empty"><span class="oblibena-empty-icon">⭐</span>Žádná oblíbená jídla.<br>Přidej je přes záložku Jídlo.</div>`;
+    return;
+  }
+  if(!filtered.length){
+    c.innerHTML=`<div class="oblibena-empty"><span class="oblibena-empty-icon">🔍</span>Nic nenalezeno.</div>`;
+    return;
+  }
+  c.innerHTML=`<div class="oblibena-full-list">${filtered.map(f=>`
+    <div class="oblibena-card">
+      <div class="oblibena-card-icon">${f.icon}</div>
+      <div class="oblibena-card-info">
+        <div class="oblibena-card-name">${esc(f.name)}</div>
+        <div class="oblibena-card-detail">${f.wgt} g · ${f.kcal} kcal</div>
+      </div>
+      <div class="oblibena-card-actions">
+        <button class="obl-edit-btn" onclick="openEditFav('${f.id}')">✏️</button>
+        <button class="obl-del-btn"  onclick="askDelFav('${f.id}','${esc(f.name)}')">🗑️</button>
+        <button class="obl-add-btn"  onclick="addFav('${f.id}')">+</button>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function addFav(id){
+  const f=favs.find(x=>x.id===id);
+  if(!f) return;
+  addEntry({ id:uid(), time:now(), icon:f.icon, name:f.name, wgt:f.wgt, kcal:f.kcal, type:'food' });
+  toast(`${f.icon} ${f.name} přidáno`);
+  goTo('dnes');
+}
+
+// ── ULOŽENÍ OBLÍBENÉHO ──
+let sfIcon = '🍽️';
+
+function openSaveFav(){
+  const name=el('f-inp-name').value.trim();
+  el('sf-name').value=name;
+  sfIcon='🍽️';
+  el('sf-icon-grid').querySelectorAll('.icon-pick-btn').forEach(b=>b.classList.remove('picked'));
+  el('savefav-modal').classList.add('show');
+}
+function closeSaveFav(){ el('savefav-modal').classList.remove('show'); }
+
+function pickIcon(btn, icon){
+  el('sf-icon-grid').querySelectorAll('.icon-pick-btn').forEach(b=>b.classList.remove('picked'));
+  btn.classList.add('picked');
+  sfIcon=icon;
+}
+
+function confirmSaveFav(){
+  const name=el('sf-name').value.trim();
+  if(!name){ toast('Zadej název ❗'); return; }
+  const wgt=resolveFWgt(), typ=resolveFTyp();
+  if(!wgt||!typ){ closeSaveFav(); return; }
+  favs.push({ id:uid(), icon:sfIcon, name, wgt, kcal:typ.kcal });
+  persist();
+  closeSaveFav();
+  renderFavs();
+  toast(`${sfIcon} ${name} uloženo do oblíbených ⭐`);
+}
+
+// ── EDITACE OBLÍBENÉHO ──
+let editFavId=null, efIcon='🍽️';
+
+function openEditFav(id){
+  const f=favs.find(x=>x.id===id);
+  if(!f) return;
+  editFavId=id; efIcon=f.icon;
+  el('ef-name').value=f.name;
+  el('ef-wgt').value=f.wgt;
+  el('ef-kcal').value=f.kcal;
+  el('ef-icon-grid').querySelectorAll('.icon-pick-btn').forEach(b=>{
+    b.classList.toggle('picked', b.textContent===f.icon);
+  });
+  el('editfav-modal').classList.add('show');
+}
+function closeEditFav(){ editFavId=null; el('editfav-modal').classList.remove('show'); }
+
+function pickIconEf(btn, icon){
+  el('ef-icon-grid').querySelectorAll('.icon-pick-btn').forEach(b=>b.classList.remove('picked'));
+  btn.classList.add('picked');
+  efIcon=icon;
+}
+
+function confirmEditFav(){
+  const idx=favs.findIndex(x=>x.id===editFavId);
+  if(idx<0){ closeEditFav(); return; }
+  favs[idx].name = el('ef-name').value.trim() || favs[idx].name;
+  favs[idx].wgt  = parseInt(el('ef-wgt').value)||favs[idx].wgt;
+  favs[idx].kcal = parseInt(el('ef-kcal').value)||favs[idx].kcal;
+  favs[idx].icon = efIcon;
+  persist();
+  closeEditFav();
+  renderFavs();
+  toast('Oblíbené upraveno ✓');
+}
+
+// ── MAZÁNÍ OBLÍBENÉHO ──
+let pendingFavId=null;
+
+function askDelFav(id, name){
+  pendingFavId=id;
+  el('confirm-sub').textContent=`Oblíbené: „${name}"`;
+  el('confirm-overlay').classList.add('show');
+}
+
+// ══════════════════════════════════════
+// KCAL KALKULAČKA
+// ══════════════════════════════════════
+function updCalc(){
+  const per100=parseFloat(el('calc-per100').value);
+  const wgt=parseFloat(el('calc-weight').value);
+  const resEl=el('calc-result');
+  const useBtn=el('calc-use-btn');
+  if(per100>0 && wgt>0){
+    const kcal=Math.round((per100/100)*wgt);
+    resEl.innerHTML=`${kcal} <span>kcal</span>`;
+    useBtn.disabled=false;
+  } else {
+    resEl.innerHTML=`– <span>kcal</span>`;
+    useBtn.disabled=true;
+  }
+}
+
+function useCalcResult(){
+  const per100=parseFloat(el('calc-per100').value);
+  const wgt=parseFloat(el('calc-weight').value);
+  if(!per100||!wgt) return;
+  const kcal=Math.round((per100/100)*wgt);
+  // vyplň váhu do custom inputu
+  el('f-inp-wgt').value=wgt;
+  el('f-inp-k100').value=kcal;
+  // aktivuj custom váhu a custom kcal
+  const wgtBtns=el('wgt-grid').querySelectorAll('.grid-btn');
+  wgtBtns.forEach(b=>b.classList.remove('sel-wgt'));
+  const customWgtBtn=Array.from(wgtBtns).find(b=>b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'custom'"));
+  if(customWgtBtn){ customWgtBtn.classList.add('sel-wgt'); fWgt='custom'; }
+  el('f-wgt-wrap').style.display='block';
+  const ftypBtns=el('ftyp-grid').querySelectorAll('.grid-btn');
+  ftypBtns.forEach(b=>b.classList.remove('sel-ftyp'));
+  const customFtypBtn=Array.from(ftypBtns).find(b=>b.dataset.k==='custom');
+  if(customFtypBtn){ customFtypBtn.classList.add('sel-ftyp'); fTyp={kcal,icon:'🍽️',custom:true}; }
+  el('f-ftyp-wrap').style.display='block';
+  syncPanel('food-custom','f-wgt-wrap','f-ftyp-wrap');
+  updFoodPreview();
+  toast(`Vypočteno: ${kcal} kcal pro ${wgt} g ✓`);
+}
+
+// ══════════════════════════════════════
+// ══════════════════════════════════════
+function renderHist(){
+  const today=todayKey();
+  // collect past days with data (excluding today)
+  const keys=Object.keys(data)
+    .filter(k=>k<today && data[k].length>0)
+    .sort((a,b)=>b.localeCompare(a));
+
+  const c=el('hist-list');
+  if(!keys.length){
+    c.innerHTML=`<div class="hist-empty">📭 Žádná minulá data</div>`;
+    return;
+  }
+
+  c.innerHTML=keys.map(k=>{
+    const d=new Date(k+'T12:00:00');
+    const label=d.toLocaleDateString('cs-CZ',{weekday:'short',day:'numeric',month:'numeric'});
+    const w=dayWater(k), kc=dayKcal(k);
+    return `<div class="hist-day-card">
+      <div class="hdc-date">${label}</div>
+      <div class="hdc-val wc">💧 ${w} ml</div>
+      <div class="hdc-val fc">🔥 ${kc} kcal</div>
+      <div class="hdc-del-btn" onclick="askDelDay('${k}','${label}')">🗑️</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════
+// NASTAVENÍ
+// ══════════════════════════════════════
+function openSettings(){
+  el('s-name').value =cfg.name||'';
+  el('s-water').value=cfg.waterGoal;
+  el('s-kcal').value =cfg.kcalGoal;
+  el('settings-modal').classList.add('show');
+}
+function closeSettings(){ el('settings-modal').classList.remove('show'); }
+function saveSettings(){
+  cfg.name     =el('s-name').value.trim();
+  cfg.waterGoal=parseInt(el('s-water').value)||2000;
+  cfg.kcalGoal =parseInt(el('s-kcal').value)||2500;
+  persist(); closeSettings(); renderDnes();
+  toast('Nastavení uloženo ✓');
+}
+
+// ══════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════
+function toast(msg){
+  const w=el('toast-wrap');
+  const t=document.createElement('div');
+  t.className='toast'; t.textContent=msg; w.appendChild(t);
+  setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(),300); },2500);
+}
+
+// ══════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════
+function el(id){ return document.getElementById(id); }
+function set(id,v){ el(id).textContent=v; }
+function uid(){ return Date.now()+'-'+Math.random().toString(36).slice(2); }
+function now(){ return new Date().toTimeString().slice(0,5); }
+function esc(s){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+load();
+renderDnes();
+// auto-refresh časovačů každou minutu
+setInterval(()=>{ if(el('screen-dnes').classList.contains('active')) renderDnes(); }, 60000);
+
+// Service Worker registrace s vynucenou aktualizací
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(reg=>{
+    reg.addEventListener('updatefound',()=>{
+      const newWorker=reg.installing;
+      newWorker.addEventListener('statechange',()=>{
+        if(newWorker.state==='installed' && navigator.serviceWorker.controller){
+          newWorker.postMessage({type:'SKIP_WAITING'});
+        }
+      });
+    });
+  });
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    window.location.reload();
+  });
+}
+</script>
+</body>
+</html>
