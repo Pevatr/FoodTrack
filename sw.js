@@ -1,11 +1,5 @@
-const CACHE = 'foodtrack-v1';
-const FILES = [
-  './',
-  './index.html',
-  './ikona-192.png',
-  './ikona-512.png',
-  './manifest.json'
-];
+const CACHE = 'foodtrack-v2';
+const FILES = ['./index.html', './manifest.json', './icon.svg'];
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(FILES))
