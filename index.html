@@ -533,7 +533,6 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
         <div class="prog-goal">z <strong id="d-water-goal">2000</strong> ml</div>
       </div>
       <div class="track"><div class="fill water" id="d-water-fill" style="width:0%"></div></div>
-      <div class="prog-remain" id="d-water-rem"></div>
       <div class="prog-last" id="d-water-last"></div>
     </div>
     <div class="prog-card food">
@@ -544,14 +543,8 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
         <div class="prog-goal">z <strong id="d-kcal-goal">2500</strong> kcal</div>
       </div>
       <div class="track"><div class="fill food" id="d-kcal-fill" style="width:0%"></div></div>
-      <div class="prog-remain" id="d-kcal-rem"></div>
       <div class="prog-last" id="d-food-last"></div>
     </div>
-  </div>
-
-  <div class="consump-line" id="consump-line">
-    <span class="consump-icon">⚖️</span>
-    <span class="consump-text" id="consump-text">Celkem zkonzumováno: <strong>0 g</strong></span>
   </div>
 
   <div class="today-list" id="today-list"></div>
@@ -1032,9 +1025,6 @@ function renderDnes(){
   set('d-water-goal', wG);
   const wP=Math.min((water/wG)*100,100);
   el('d-water-fill').style.width=wP+'%';
-  const wRem=el('d-water-rem');
-  if(water>=wG){ wRem.textContent='✓ Cíl splněn!'; wRem.className='prog-remain ok'; }
-  else { wRem.textContent=`Zbývá ${wG-water} ml`; wRem.className='prog-remain'; }
 
   // kcal
   set('d-kcal', kcal);
@@ -1043,19 +1033,6 @@ function renderDnes(){
   const kf=el('d-kcal-fill');
   kf.style.width=kP+'%';
   kf.className='fill '+(kP>=100?'danger':kP>=85?'warn':'food');
-  const kRem=el('d-kcal-rem');
-  if(kcal>=kG){ kRem.textContent='⚠ Kalorický limit dosažen'; kRem.className='prog-remain over'; }
-  else { kRem.textContent=`Zbývá ${kG-kcal} kcal`; kRem.className='prog-remain food-ok'; }
-
-  // consumption summary
-  const totalWgt  = todayList().filter(e=>e.type==='food').reduce((s,e)=>s+(e.wgt||0),0);
-  const totalMl   = dayWater(todayKey());
-  const totalGram = totalWgt + totalMl; // 1 ml = 1 g
-  const parts = [];
-  if(totalMl>0)  parts.push(`💧 ${totalMl} ml`);
-  if(totalWgt>0) parts.push(`🍽️ ${totalWgt} g`);
-  const detail = parts.length ? ` (${parts.join(' + ')})` : '';
-  el('consump-text').innerHTML = `Celkem zkonzumováno: <strong>${totalGram} g</strong>${detail}`;
 
   // last entry timers — samostatná logika pro tekutiny a jídlo
   function diffMins(entries){
@@ -1077,8 +1054,8 @@ function renderDnes(){
     const diff=diffMins(entries); if(diff===null) return null;
     const text=fmtDiff(diff);
     let cls;
-    if(diff<30)       cls='fresh';
-    else if(diff<60)  cls='warn-time';
+    if(diff<60)       cls='fresh';
+    else if(diff<90)  cls='warn-time';
     else              cls='danger-time';
     return { text, cls };
   }
@@ -1086,9 +1063,9 @@ function renderDnes(){
     const diff=diffMins(entries); if(diff===null) return null;
     const text=fmtDiff(diff);
     let cls;
-    if(diff<60)       cls='fresh';
-    else if(diff<120) cls='warn-time';
-    else              cls='food-old';
+    if(diff<90)        cls='danger-time';
+    else if(diff<120)  cls='warn-time';
+    else               cls='food-old';
     return { text, cls };
   }
 
